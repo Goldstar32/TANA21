@@ -4,63 +4,95 @@ import numpy as np
 
 # a)
 
-N = 5
-h = 1/N
+# This sucks but I wont be bothered to change it
+_h = 1/5
 
-# Interior central differences
-lower = np.diag(-np.ones(N)/(2*h), -1)
-upper = np.diag( np.ones(N)/(2*h), 1)
+def Dxa(N = 5, h = False):
+    if not h:
+        h = 1/N
 
-Dx = lower + upper
 
-# Replace boundary differences
-Dx[0, 0] = -1/h
-Dx[0, 1] =  1/h
+    # Interior central differences
+    lower = np.diag(-np.ones(N)/(2*h), -1)
+    upper = np.diag( np.ones(N)/(2*h), 1)
 
-Dx[N, N-1] = -1/h
-Dx[N, N]   =  1/h
+    Dx = lower + upper
 
-print("3.1 a)\n", Dx)
+    # Replace boundary differences
+    Dx[0, 0] = -1/h
+    Dx[0, 1] =  1/h
+
+    Dx[N, N-1] = -1/h
+    Dx[N, N]   =  1/h
+
+    return Dx
+
+print("3.1 a)\n", Dxa())
 
 # b)
 print("b)")
 
-f = (np.array([1, 1, 1, 1, 1, 1])*h).transpose()
-print("f(x) = 1\n", Dx@f)
+f = (np.array([1, 1, 1, 1, 1, 1])*_h).transpose()
+print("f(x) = 1\n", Dxa()@f)
 
-f = (np.array([0, 1, 2, 3, 4, 5])*h).transpose()
-print("f(x) = x\n", Dx@f)
+f = (np.array([0, 1, 2, 3, 4, 5])*_h).transpose()
+print("f(x) = x\n", Dxa()@f)
 
-f = (np.array([0, 1, 4, 9, 16, 25])*h*h).transpose()
-print("f(x) = x²\n", Dx@f)
+f = (np.array([0, 1, 4, 9, 16, 25])*_h*_h).transpose()
+print("f(x) = x²\n", Dxa()@f)
 
 # c)
 print("c)")
 
-def f0(f):
-    return (-3*f[0] + 4*f[1] - f[2])/(2*h)
+def Dxc(N = 5):
+    Dx = Dxa(N)
+    Dx[0, 0] = -3/(2*_h)
+    Dx[0, 1] = 4/(2*_h)
+    Dx[0, 2] = -1/(2*_h)
+    Dx[0, -1] = 1/(2*_h)
+    Dx[0, -2] = -4/(2*_h)
+    Dx[0, -3] = 3/(2*_h)
+    return Dx
 
-def fN(f):
-    return (f[-3] - 4*f[-2] + 3*f[-1])/(2*h)
-
-f = (np.array([1, 1, 1, 1, 1, 1])*h).transpose()
-f_der = Dx@f
-f_der[0] = f0(f)
-f_der[-1] = fN(f)
+f = (np.array([1, 1, 1, 1, 1, 1])*_h).transpose()
+f_der = Dxc()@f
 print("f(x) = 1\n", f_der)
 
-f = (np.array([0, 1, 2, 3, 4, 5])*h).transpose()
-f_der = Dx@f
-f_der[0] = f0(f)
-f_der[-1] = fN(f)
+f = (np.array([0, 1, 2, 3, 4, 5])*_h).transpose()
+f_der = Dxc()@f
 print("f(x) = x\n", f_der)
 
-f = (np.array([0, 1, 4, 9, 16, 25])*h*h).transpose()
-f_der = Dx@f
-f_der[0] = f0(f)
-f_der[-1] = fN(f)
+f = (np.array([0, 1, 4, 9, 16, 25])*_h*_h).transpose()
+f_der = Dxc()@f
 print("f(x) = x²\n", f_der)
 
 # d)
 print("d)")
 
+def fx(x):
+    return np.exp(np.sin(4*x))
+
+def fp(x):
+    return 4*np.cos(4*x)*np.exp(np.sin(4*x))
+
+def error(N, Dx = Dxa):
+    max = 0
+    f = np.array(list(map(fx, np.arange(N + 1)*_h))).transpose()
+    f_der = Dx(N)@f
+
+    for i in np.arange(N + 1):
+        err = np.abs(fp(i*_h)-f_der[i])
+        if err > max:
+            max = err
+
+    return max
+
+print("Using stencil from a)")
+print("N = 10, error =", error(10))
+print("N = 100, error =", error(100))
+print("N = 1000, error =", error(1000))
+
+print("\nUsing stencil from c)")
+print("N = 10, error =", error(10, Dxc))
+print("N = 100, error =", error(100, Dxc))
+print("N = 1000, error =", error(1000, Dxc))
